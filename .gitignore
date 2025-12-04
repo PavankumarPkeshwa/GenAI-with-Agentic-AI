@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual env
+.venv/
+
+# Vector DB
+vector_store/
+chroma/
+index/
+
+# HF caches
+cache/
+huggingface/
+hf_cache/
+
+# VSCode
+.vscode/
+
+# OS files
+.DS_Store

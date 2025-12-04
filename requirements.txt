@@ -1,0 +1,27 @@
+fastapi
+uvicorn[standard]
+
+# LangChain core packages
+langchain
+langchain-community
+langchain-core
+
+# Embeddings
+sentence-transformers
+
+# HuggingFace free models
+transformers
+huggingface-hub
+
+# Vector DB (Chroma)
+chromadb
+
+# Optional FAISS CPU (fallback retriever)
+faiss-cpu
+
+# Web scraping
+beautifulsoup4
+requests
+
+# Utilities
+python-dotenv

@@ -1,26 +1,16 @@
 """
 manager_agent.py
-
-Manager Agent orchestrates:
-1. Fetch and clean article using News Agent
-2. Validate using Validator Agent
-3. If approved: add to VectorDB (embedding + persist)
-4. Return a summary object with status and metadata
-
-This is the single endpoint to ingest a URL into the RAG dataset.
+Manager: scrape -> clean -> validate -> persist to vectordb
 """
 
 from app.agent.news_agent import fetch_url, extract_main_text_from_html, clean_text_with_llm
 from app.agent.validator_agent import validate_article
 from app.rag.vectordb import get_vector_db
 from app.rag.embedder import get_embedding_model
-from langchain.schema import Document  # lightweight wrapper for text+metadata
+from langchain_core.documents import Document
+  # langchain 1.x
 
 def ingest_url(url: str) -> dict:
-    """
-    Full ingestion flow for a single URL.
-    Returns a dict describing result and metadata.
-    """
     result = {"url": url, "status": "error", "reason": None, "metadata": {}}
 
     try:
@@ -46,8 +36,6 @@ def ingest_url(url: str) -> dict:
 
         # 4) Validate article
         validation = validate_article(content)
-
-        # Save validation metadata for response
         result["metadata"]["validation"] = validation
 
         if validation["final_decision"] != "approve":
@@ -59,28 +47,30 @@ def ingest_url(url: str) -> dict:
         vectordb = get_vector_db()
         embedding_model = get_embedding_model()
 
-        # We create a Document object (langchain.schema.Document) with page_content and metadata
+        # Build Document (langchain_core.Document)
         doc = Document(page_content=content, metadata={"source": url, "title": title})
 
-        # Add document to vector store. Most high-level vectorstore wrappers have add_documents or add_texts.
-        # We'll try add_documents first; if not available, adapt to your version (see notes below).
+        # Try different add APIs depending on installed wrapper
+        add_succeeded = False
         try:
+            # Preferred: add_documents (many wrappers implement this)
             vectordb.add_documents([doc])
+            add_succeeded = True
         except Exception:
-            # fallback: some versions use add_texts
             try:
+                # Fallback: add_texts + metadatas
                 vectordb.add_texts([content], metadatas=[doc.metadata])
+                add_succeeded = True
             except Exception as ex:
-                # If both fail we surface the error (you may need to adjust to your installed Chroma wrapper API)
                 result["status"] = "error"
                 result["reason"] = f"vectordb_add_failed: {ex}"
                 return result
 
-        # Persist the DB (if the vectorstore requires explicit persist)
+        # Persist DB if supported
         try:
             vectordb.persist()
         except Exception:
-            # if persist() is not available, ignore (some wrappers persist automatically)
+            # some wrappers persist automatically
             pass
 
         result["status"] = "ingested"

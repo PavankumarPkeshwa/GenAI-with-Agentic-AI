@@ -1,14 +1,12 @@
 """
 rag_chain.py
 ------------
-Creates the full Retrieval-Augmented Generation pipeline:
-1. Retrieve relevant chunks
-2. Feed them into LLM with a custom prompt
-3. Generate clean factual answers
+Fully compatible with LangChain 1.1.0
+Manual RAG pipeline without deprecated RetrievalQA class.
 """
 
 from langchain_core.prompts import PromptTemplate
-from langchain.chains import RetrievalQA
+from langchain_core.runnables import RunnablePassthrough, RunnableLambda
 from langchain_community.llms import HuggingFaceHub
 
 from app.rag.vectordb import get_vector_db
@@ -17,45 +15,66 @@ from app.rag.vectordb import get_vector_db
 def get_llm():
     """
     Loads a FREE HuggingFace model for Q&A.
-    Model: flan-t5-large
     """
-    llm = HuggingFaceHub(
+    return HuggingFaceHub(
         repo_id="google/flan-t5-large",
-        model_kwargs={"temperature": 0.1, "max_length": 400}
+        model_kwargs={"temperature": 0.0, "max_length": 512}
     )
 
-    return llm
+
+def build_prompt():
+    """
+    Custom RAG prompt
+    """
+    return PromptTemplate(
+        input_variables=["context", "question"],
+        template=(
+            "You are a factual News QA Agent.\n"
+            "Use ONLY the context provided.\n\n"
+            "CONTEXT:\n{context}\n\n"
+            "QUESTION: {question}\n\n"
+            "Answer concisely and do not hallucinate."
+        )
+    )
+
+
+def format_docs(docs):
+    """
+    Combine retrieved documents into a single context string.
+    For LangChain 1.x Document objects.
+    """
+    texts = []
+    for d in docs:
+        content = getattr(d, "page_content", None) or getattr(d, "content", None)
+        if content:
+            texts.append(content)
+    return "\n\n".join(texts)
 
 
 def get_rag_chain():
     """
-    Builds a complete RAG pipeline:
-    - Retrieve context
-    - Inject into prompt
-    - Generate answer using LLM
+    Creates a complete RAG chain that:
+    - retrieves documents
+    - formats them
+    - injects into prompt
+    - generates answer with LLM
     """
 
     vectordb = get_vector_db()
     retriever = vectordb.as_retriever(search_kwargs={"k": 3})
 
-    # Custom RAG prompt
-    prompt = PromptTemplate(
-        input_variables=["context", "question"],
-        template=(
-            "You are a News QA Agent. Use ONLY the context below.\n\n"
-            "CONTEXT:\n{context}\n\n"
-            "QUESTION: {question}\n\n"
-            "Give a clean factual answer. No hallucination."
-        )
-    )
-
     llm = get_llm()
+    prompt = build_prompt()
 
-    rag = RetrievalQA.from_chain_type(
-        llm=llm,
-        retriever=retriever,
-        chain_type="stuff",
-        chain_type_kwargs={"prompt": prompt}
+    # RAG pipeline:
+    # question -> {"context": retriever(question), "question": question} -> prompt -> llm
+    rag_chain = (
+        {
+            "context": retriever | RunnableLambda(format_docs),
+            "question": RunnablePassthrough()
+        }
+        | prompt
+        | llm
     )
 
-    return rag
+    return rag_chain

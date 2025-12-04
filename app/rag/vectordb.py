@@ -1,12 +1,9 @@
 """
 vectordb.py
 -----------
-Creates or loads a Chroma Vector Database.
+Compatible with LangChain 1.1.0
 
-Chroma stores:
-- embeddings
-- metadata
-- document IDs
+Creates a Chroma vector DB with SentenceTransformer embeddings.
 """
 
 import os
@@ -18,17 +15,18 @@ CHROMA_DIR = "vector_store"
 
 def get_vector_db():
     """
-    Returns a Chroma database object.
-    If the folder doesn't exist, it creates one.
+    Initializes (or loads) a ChromaDB instance.
     """
+
     if not os.path.exists(CHROMA_DIR):
         os.makedirs(CHROMA_DIR)
 
-    embedding_model = get_embedding_model()
+    embedding = get_embedding_model()
 
     vectordb = Chroma(
         persist_directory=CHROMA_DIR,
-        embedding_function=embedding_model
+        embedding_function=embedding,
+        collection_name="news_articles"
     )
 
     return vectordb

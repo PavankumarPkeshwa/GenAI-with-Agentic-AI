@@ -1,26 +1,30 @@
 """
 splitter.py
 -----------
-Splits long news articles into smaller chunks.
+Compatible with LangChain 1.x
 
-Why?
-- Long documents are hard to embed
-- RAG works best with chunks (300–800 tokens)
+Splits long news articles into chunks for RAG.
 """
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 
-def split_text_into_chunks(documents):
+def split_text_into_chunks(text_list):
     """
-    Takes list of long text documents → returns list of small chunks.
+    Input: list[str] (raw article strings)
+    Output: list[str] (chunk strings)
     """
 
     splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,     # each chunk = 800 characters
-        chunk_overlap=100,  # little overlap improves context
-        separators=["\n\n", "\n", ".", " "]  # logical breakpoints
+        chunk_size=800,
+        chunk_overlap=100,
+        separators=["\n\n", "\n", ".", " "]
     )
 
-    chunks = splitter.split_documents(documents)
-    return chunks
+    all_chunks = []
+
+    for txt in text_list:
+        chunks = splitter.split_text(txt)    # <-- CORRECT API
+        all_chunks.extend(chunks)
+
+    return all_chunks
