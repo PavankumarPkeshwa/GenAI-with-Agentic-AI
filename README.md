@@ -21,16 +21,14 @@ An **intelligent news scraping & Q&A system** that:
 # 1. Install dependencies
 pip install -r requirements.txt
 
-# 2. Set up HuggingFace token (get from https://huggingface.co/settings/tokens)
-cp .env.example .env
-# Edit .env and add your token
-
-# 3. Start server
+# 2. Start server (NO API TOKEN NEEDED! Uses local LLM)
 ./start.sh
 # OR: uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
 **That's it!** Visit http://localhost:8000/docs for API documentation.
+
+> **✨ Zero Setup**: Uses google/flan-t5-base (local LLM, no API tokens required)
 
 ## 🏗️ Architecture
 
@@ -87,10 +85,10 @@ curl -X POST "http://localhost:8000/rag/ask?question=What%20is%20AI"
 
 - **Backend**: FastAPI + Uvicorn
 - **AI Framework**: LangChain 1.1.0
-- **Embeddings**: SentenceTransformers (`all-MiniLM-L6-v2`)
-- **Vector DB**: ChromaDB
-- **LLM**: HuggingFace Flan-T5-Large
-- **Scraper**: BeautifulSoup4
+- **Embeddings**: SentenceTransformers (`all-MiniLM-L6-v2`) - 384-dim vectors
+- **Vector DB**: ChromaDB (with SQLite backend)
+- **LLM**: google/flan-t5-base (local, no API token needed!)
+- **Scraper**: BeautifulSoup4 + Requests
 
 ## 📁 Project Structure
 
@@ -118,27 +116,30 @@ GenAI-with-Agentic-AI/
 ✅ **Persistent Storage** - ChromaDB for long-term storage  
 ✅ **REST API** - Easy integration with FastAPI  
 ✅ **Modern Stack** - LangChain 1.x compatible  
+✅ **Zero API Tokens** - Uses local LLM (google/flan-t5-base)  
 
 ## 📖 Documentation
 
 - **[FINAL_VERDICT.md](FINAL_VERDICT.md)** - Complete project assessment & testing results
+- **[PROJECT_WALKTHROUGH.md](PROJECT_WALKTHROUGH.md)** - Deep code explanations (1073 lines)
+- **[VISUAL_GUIDE.md](VISUAL_GUIDE.md)** - Flowcharts, diagrams & architecture pictures
+- **[NO_TOKEN_NEEDED.md](NO_TOKEN_NEEDED.md)** - Local LLM implementation guide
 - **[PROJECT_STATUS.md](PROJECT_STATUS.md)** - Detailed status report
 - **API Docs**: http://localhost:8000/docs (when server is running)
 
 ## 🔧 Configuration
 
-All configuration is in `.env` file (copy from `.env.example`):
+**No configuration needed!** The project uses sensible defaults:
 
 ```bash
-# Required
-HUGGINGFACEHUB_API_TOKEN=hf_your_token_here
-
-# Optional (defaults shown)
-CHROMA_DIR=vector_store
-COLLECTION_NAME=news_articles
-EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
-LLM_MODEL=google/flan-t5-large
+# Optional: Customize in .env (if needed)
+CHROMA_DIR=vector_store              # Vector DB location
+COLLECTION_NAME=news_articles        # DB collection name
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2  # Embeddings
+LLM_MODEL=google/flan-t5-base       # Local LLM model
 ```
+
+> **Note**: No HuggingFace API token needed - uses local LLM!
 
 ## 🐛 Troubleshooting
 
@@ -146,17 +147,31 @@ LLM_MODEL=google/flan-t5-large
 - Check dependencies: `python3 check_deps.py`
 - Install missing packages: `pip install -r requirements.txt`
 
-**Scraper fails?**
-- Add HuggingFace token to `.env`
-- Get free token: https://huggingface.co/settings/tokens
+**Model download slow?**
+- First run downloads google/flan-t5-base (~990MB)
+- Subsequent runs use cached model (~2-3 seconds inference)
 
 **RAG returns empty results?**
 - Scrape some articles first using `/scraper/scrape`
 - Or use `/scraper/cron` for batch scraping
+- Articles are stored in `vector_store/chroma.sqlite3`
+
+## 🧪 Full Test Suite
+
+```bash
+# Check all dependencies (should show 7/7 ✅)
+python3 check_deps.py
+
+# Test local LLM (verify model downloads and works)
+python3 test_local_llm.py
+
+# Run comprehensive tests
+python3 test_core.py
+```
 
 ## 📊 Status
 
-**✅ Production Ready** (pending HF token setup)
+**✅ PRODUCTION READY** - Fully tested with no API token requirements
 
 See [FINAL_VERDICT.md](FINAL_VERDICT.md) for complete assessment.
 
