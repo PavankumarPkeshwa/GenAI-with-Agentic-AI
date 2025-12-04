@@ -5,16 +5,16 @@ Scraper + LLM-based cleaner.
 import requests
 from bs4 import BeautifulSoup
 
-# use community LLM wrapper compatible with your installed packages
-from langchain_community.llms import HuggingFaceHub
+# use local LLM (no API token required)
 from langchain_core.prompts import PromptTemplate
+from app.utils.local_llm import LocalLLM
 
 def _get_llm():
     """
-    Returns a lightweight HuggingFace LLM wrapper.
-    Compatible with langchain_core + langchain_community installed.
+    Returns a local HuggingFace LLM.
+    Model is downloaded and cached locally (no API token needed).
     """
-    return HuggingFaceHub(repo_id="google/flan-t5-large", model_kwargs={"temperature": 0.0, "max_length": 512})
+    return LocalLLM(model_name="google/flan-t5-base", max_length=512)
 
 def fetch_url(url: str, timeout: int = 10) -> str:
     headers = {

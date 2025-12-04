@@ -7,18 +7,19 @@ Manual RAG pipeline without deprecated RetrievalQA class.
 
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableLambda
-from langchain_community.llms import HuggingFaceHub
+from app.utils.local_llm import LocalLLM
 
 from app.rag.vectordb import get_vector_db
 
 
 def get_llm():
     """
-    Loads a FREE HuggingFace model for Q&A.
+    Loads a local HuggingFace model for Q&A.
+    Model is downloaded and cached locally (no API token needed).
     """
-    return HuggingFaceHub(
-        repo_id="google/flan-t5-large",
-        model_kwargs={"temperature": 0.0, "max_length": 512}
+    return LocalLLM(
+        model_name="google/flan-t5-base",
+        max_length=512
     )
 
 
