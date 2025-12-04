@@ -16,5 +16,5 @@ def ask_question(question: str):
     User sends a question → RAG searches news DB → returns answer
     """
     rag = get_rag_chain()
-    answer = rag.run(question)
+    answer = rag.invoke(question)
     return {"question": question, "answer": answer}
